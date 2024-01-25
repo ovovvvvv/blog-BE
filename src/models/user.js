@@ -1,5 +1,5 @@
 import mongoose, {Schema} from 'mongoose';
-import bcrypt from 'bcrpyt';
+import bcrypt from 'bcrypt';
 
 const UserSchema = new Schema({
     username: String,
@@ -18,6 +18,12 @@ UserSchema.methods.checkPassword = async function(password) {
 
 UserSchema.statics.findByUsername = function(username) {
     return this.findOne({ username });
+};
+
+UserSchema.methods.serialize = function() {
+    const data = this.toJSON();
+    delete data.hashedPassword;
+    return data;
 };
 
 const User = mongoose.model('User', UserSchema);
