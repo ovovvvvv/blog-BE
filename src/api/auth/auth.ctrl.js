@@ -94,5 +94,9 @@ export const check = async ctx => {
 };
 
 export const logout = async ctx => {
-    // 로그아웃
+    ctx.cookies.set('access_token', null, {
+        httpOnly: true,
+        maxAge: 0, // 쿠키 유효기간을 0으로 설정하여 만료시킵니다.
+    });
+    ctx.status = 204; // No Content
 };
