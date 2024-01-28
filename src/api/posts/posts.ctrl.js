@@ -78,14 +78,21 @@ export const list = async ctx => {
         return;
     }
 
+    const { tag, username } = ctx.query;
+    // tag, username 값이 유효하면 객체 안에 넣고, 그렇지 않으면 넣지 않음
+    const query = {
+        ...(username ? {'user.username' :  username } : {}),
+        ...(tag ? {tags : tag} : {}),
+    };
+
     try {
-        const posts = await Post.find()
+        const posts = await Post.find(query)
         .sort({_id: -1})
         .limit(10)
         .skip((page - 1) * 10)
         .lean()
         .exec();
-        const postCount = await Post.countDocuments().exec();
+        const postCount = await Post.countDocuments(query).exec();
         // countDocuments =  MongoDB에서 Post 모델의 문서 수를 가져오는 Mongoose 메서드
         ctx.set('Last-Page', Math.ceil(postCount / 10));
         ctx.body = posts.map(post =>({
