@@ -4,14 +4,36 @@ import Joi from 'joi';
 
 const { ObjectId } = mongoose.Types;
 
-export const checkObjectId = (ctx, next) => {
-    const {id} = ctx.params;
-    if (!ObjectId.isValid(id)){
+export const getPostById = async (ctx, next) => {
+    const { id } = ctx.params;
+    console.log(id);
+    if (!ObjectId.isValid(id)) {
         ctx.status = 400;
+        return;
+    }
+    try {
+        const post = await Post.findById(id);
+        //포스트가 존재하지 않을때
+        if (!post) {
+            ctx.status = 404;
+            return;
+        }
+        ctx.state.post = post;
+        return next();
+    } catch (e) {
+        ctx.throw(500, e);
+    }
+}
+
+export const checkOwnPost = (ctx, next) => {
+    const { user, post } = ctx.state;
+    if (post.user._id.toString() !== user._id) {
+        ctx.status = 403;
         return;
     }
     return next();
 };
+
 
 // 포스트 작성
 export const write = async ctx  => {
@@ -36,6 +58,7 @@ export const write = async ctx  => {
         title, 
         body,
         tags,
+        user: ctx.state.user,
     });
 
     try{
@@ -77,29 +100,23 @@ export const list = async ctx => {
 
 // 특정 포스트 조회
 export const read = async ctx => {
-    const {id} = ctx.params;
+   ctx.body = ctx.state.post;
+};
+
+// 포스트 삭제
+export const remove = async ctx => {
+    const { id } = ctx.params;
     try {
-        const post = await Post.findById(id).exec();
-        if(!post) {
-            ctx.status = 404; 
-            return;
-        }
-        ctx.body = post;
+        await Post.findByIdAndDelete(id).exec();
+        ctx.status = 204; // No Content (성공하긴 했지만 응답할 데이터는 없음)
     } catch (e) {
         ctx.throw(500, e);
     }
 };
 
-export const remove = async ctx => {
-    const {id} = ctx.params;
-    try {
-        await Post.findByIdAndDelete(id).exec();
-        ctx.status = 204; // No Content (성공하긴 했지만 응답할 데이터는 없음)
-    } catch (e) {
-        ctx.throw(500, e)
-    }
-};
 
+
+// 포스트 수정
 export const update = async ctx => {
     const {id} = ctx.params;
 
@@ -132,3 +149,5 @@ export const update = async ctx => {
         ctx.throw(500, e);
     }
 };
+
+
